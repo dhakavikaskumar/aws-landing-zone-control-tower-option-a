@@ -1,0 +1,129 @@
+# client-bootstrap.yaml
+# Option A — Control Tower QuickStart — Client Bootstrap Spec
+# Purpose: single source of truth for decisions + naming + accounts + regions.
+# Keep this file updated; do not rely on memory or chat logs.
+
+meta:
+  product_tier: "option-a"
+  product_name: "Control Tower QuickStart"
+  created_by: "VIKAS_KUMAR_DHAKA"
+  created_on: "2025-12-24"
+  last_updated_on: "2025-24-12"
+
+client:
+  # 3–12 chars, lowercase, letters+digits+hyphen, never changes mid-project.
+  prefix: "lz-a"
+  display_name: "Landing Zone Option A"
+  timezone: "Asia/Kolkata"
+
+aws:
+  # Control Tower home region (single region recommended for Option A).
+  home_region: "ap-south-1"
+
+  # Account naming convention (Option A default)
+  # <prefix>-log-archive, <prefix>-audit (or -security), <prefix>-workloads-01
+  accounts:
+    management:
+      # Management/payer account is the existing root account.
+      name: "management"
+      note: "Payer + Organizations + Control Tower"
+    log_archive:
+      name: "lz-a-log-archive"
+      email: "aws+log-archive@vikaskumardhaka.com"
+      ou: "Security"
+    audit:
+      name: "lz-a-audit"
+      email: "aws+audit@vikaskumardhaka.com"
+      ou: "Security"
+    workloads_01:
+      name: "lz-a-workloads-01"
+      email: "aws+workloads-01@vikaskumardhaka.com"
+      ou: "Workloads"
+
+organization:
+  ous:
+    security: "Security"
+    workloads: "Workloads"
+
+governance_choices:
+  # Region restriction is optional in Option A. If enabled, apply to Workloads OU only.
+  region_allowlist:
+    enabled: true
+    allowed_regions:
+      - "ap-south-1"
+
+  # S3 account-level public access block (recommended default: true)
+  s3_block_public_access_default: true
+
+  # MFA expectations (recommended default: true)
+  mfa_required_for_admins: true
+
+identity_center:
+  enabled: true
+  identity_source: "identity-center-directory" # Option A default
+  groups:
+    readonly: "aws-readonly"
+    workloads_poweruser: "aws-workloads-poweruser"
+    breakglass_admin: "aws-breakglass-admin"
+  permission_sets:
+    readonly: "PS-ReadOnly"
+    workloads_poweruser: "PS-PowerUser-Workloads"
+    breakglass_admin: "PS-Admin-BreakGlass"
+  session_durations:
+    readonly: "PT2H"
+    workloads_poweruser: "PT4H"
+    breakglass_admin: "PT1H"
+
+contacts:
+  platform_owner:
+    name: "Platform Owner Name"
+    email: "aws+platform-owner@vikaskumardhaka.com"
+  security_contact:
+    name: "Security Contact Name"
+    email: "aws+security@vikaskumardhaka.com"
+  billing_contact:
+    name: "Billing Contact Name"
+    email: "aws+billing@vikaskumardhaka.com"
+  breakglass_contacts:
+    - name: "Breakglass Admin 1"
+      email: "aws+breakglass-admin1@vikaskumardhaka.com"
+      phone: "+91-XXXXXXXXXX"
+      role: "Admin-BreakGlass"
+      notes: "Primary emergency admin; primary custodian for root MFA recovery details (2-person rule)"
+    - name: "Breakglass Admin 2"
+      email: "aws+breakglass-admin2@vikaskumardhaka.com"
+      phone: "+91-XXXXXXXXXX"
+      role: "Admin-BreakGlass"
+      notes: "Secondary emergency admin; secondary custodian for root MFA recovery details (2-person rule)"
+
+terraform:
+  # Tooling notes:
+  # - Terraform and OpenTofu both read *.tf and behave similarly for core workflows.
+  # - Pin versions for repeatability.
+  tool: "terraform" # terraform | opentofu
+  version: "1.9.0" # pin for your delivery
+  state:
+    backend: "s3" # recommended
+    encrypt: true
+    dynamodb_locking: true
+  conventions:
+    managed_by_tag_value: "terraform"
+    default_workspace: "default"
+
+decisions:
+  # Use this section as a quick summary for future reference.
+  nat_mode: "single" # single | per_az  (Option A default: single)
+  az_count: 2 # 2 (default) or 3
+  vpc_cidr: "10.0.0.0/16"
+
+notes: |
+  - Keep Option A intentionally simple.
+  - Anything beyond this (TGW, inspection VPC, complex DNS, CI/CD) is Option B/C or add-on.
+
+# Terraform naming inputs used by this repo
+terraform_inputs:
+  # prefix is the client prefix (same as above)
+  prefix: "<prefix>"
+  # account_name is a suffix without the prefix, e.g., workloads-01
+  account_name: "workloads-01"
+  # full_account_name becomes: <prefix>-<account_name>

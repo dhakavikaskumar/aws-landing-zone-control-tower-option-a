@@ -1,0 +1,77 @@
+name: terraform-ci
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Terraform setup (swap to OpenTofu if you standardize on tofu later)
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
+      - name: Terraform fmt (recursive)
+        run: terraform fmt -check -recursive
+
+      # Validate each root stack directory (add/remove as your repo evolves)
+      - name: Terraform validate (networking)
+        working-directory: networking
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform validate (workload-baseline)
+        working-directory: workload-baseline
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform validate (security-pack sns-topics)
+        working-directory: security-pack/terraform/sns-topics
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform validate (security-pack budgets)
+        working-directory: security-pack/terraform/budgets
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform validate (security-pack eventbridge-guardduty)
+        working-directory: security-pack/terraform/eventbridge-guardduty
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      # TFLint (optional but valuable)
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.53.0
+
+      - name: TFLint init
+        run: tflint --init
+
+      - name: TFLint (networking)
+        working-directory: networking
+        run: tflint
+
+      - name: TFLint (workload-baseline)
+        working-directory: workload-baseline
+        run: tflint
+
+      - name: TFLint (security-pack)
+        working-directory: security-pack/terraform
+        run: tflint
